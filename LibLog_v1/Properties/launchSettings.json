@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "LibLog_v1 (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "LibLog_v1 (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
