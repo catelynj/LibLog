@@ -54,9 +54,6 @@ namespace LibLog_v1
                 var insertCommand = new SqliteCommand
                 {
                     Connection = db,
-
-                    // tags here will be empty so it doesn't need to be included in the insert
-
                     CommandText = "INSERT INTO Book (ISBN, Author, Title, CoverImage, Tags) VALUES (@ISBN, @Author, @Title, @CoverImage, @Tags);"
                 };
 
@@ -67,6 +64,42 @@ namespace LibLog_v1
                 insertCommand.Parameters.AddWithValue("@Tags", "");
 
                 insertCommand.ExecuteNonQuery();
+            }
+        }
+
+
+        // Copilot Generated Tag Methods
+        public static void AddTag(string isbn, string tag)
+        {
+            string dbpath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "LibLog_v1.db");
+            using (var db = new SqliteConnection($"Filename={dbpath}"))
+            {
+                db.Open();
+                var updateCommand = new SqliteCommand
+                {
+                    Connection = db,
+                    CommandText = "UPDATE Book SET Tags = Tags || ',' || @Tag WHERE ISBN = @ISBN"
+                };
+                updateCommand.Parameters.AddWithValue("@Tag", tag);
+                updateCommand.Parameters.AddWithValue("@ISBN", isbn);
+                updateCommand.ExecuteNonQuery();
+            }
+        }
+
+        public static void RemoveTag(string isbn, string tag)
+        {
+            string dbpath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "LibLog_v1.db");
+            using (var db = new SqliteConnection($"Filename={dbpath}"))
+            {
+                db.Open();
+                var updateCommand = new SqliteCommand
+                {
+                    Connection = db,
+                    CommandText = "UPDATE Book SET Tags = REPLACE(Tags, @TagWithComma, '') WHERE ISBN = @ISBN"
+                };
+                updateCommand.Parameters.AddWithValue("@TagWithComma", "," + tag);
+                updateCommand.Parameters.AddWithValue("@ISBN", isbn);
+                updateCommand.ExecuteNonQuery();
             }
         }
 

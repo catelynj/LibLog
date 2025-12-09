@@ -39,6 +39,7 @@ namespace LibLog_v1
          
         records.data -> returns url, title, authors, identifiers, genre/subjects, covers, etc.
          */
+
         private static async Task<byte[]> getCover(string coverUri)
         {
             var httpClient = (App.Current as App)?.HttpClient;
@@ -71,10 +72,10 @@ namespace LibLog_v1
                     if (response.IsSuccessStatusCode)
                     {
                         var jsonString = await response.Content.ReadAsStringAsync();
-                        var jsonObj = JObject.Parse(jsonString);
+                        var jsonObj = JObject.Parse(jsonString); // parse JSON response into JObject so I can access properties
 
-                        var records = jsonObj["records"] as JObject;
-                        JToken? firstRecord = null;
+                        var records = jsonObj["records"] as JObject; // 'records' property
+                        JToken? firstRecord = null; // firstRecord is data for exact match of ISBN
                         
                         if (records != null && records.Properties().Any())
                         {
@@ -84,11 +85,11 @@ namespace LibLog_v1
 
                         if(firstRecord != null)
                         {
-                            string title = firstRecord["title"]?.ToString() ?? "Unknown";
-                            var authors = firstRecord["authors"]?.Select(a => a["name"]?.ToString()).Where(name => !string.IsNullOrEmpty(name));
-                            string author = authors != null && authors.Any() ? string.Join(", ", authors) : "Unknown Author";
+                            string title = firstRecord["title"]?.ToString() ?? "Unknown"; // get title, if null set to Unknown
+                            var authors = firstRecord["authors"]?.Select(a => a["name"]?.ToString()).Where(name => !string.IsNullOrEmpty(name)); // get authors list
+                            string author = authors != null && authors.Any() ? string.Join(", ", authors) : "Unknown Author"; // join authors, set to Unknown if none
 
-                            string coverUrl = jsonObj["items"]?.FirstOrDefault()?["cover"]?["medium"]?.ToString() ?? "";
+                            string coverUrl = firstRecord["cover"]?["medium"]?.ToString() ?? ""; // get cover URL for book, keep empty if none
                             var coverImage = await getCover(coverUrl);
 
                             return (title, author, coverImage);

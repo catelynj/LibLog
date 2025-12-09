@@ -32,7 +32,7 @@ public sealed partial class USBScanWindow : Window
     public USBScanWindow()
     {
         InitializeComponent();
-        AppWindow.Resize(new SizeInt32(700, 600));
+        AppWindow.Resize(new SizeInt32(700, 700));
         CenterWindow();
 
         txtISBNInput.IsEnabled = true;

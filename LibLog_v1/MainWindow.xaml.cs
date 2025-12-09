@@ -30,16 +30,17 @@ namespace LibLog_v1
         IList<Book> allBooks = new List<Book>();
         ObservableCollection<Book> booksFiltered = new ObservableCollection<Book>();
         
-
         public MainWindow()
         {
             InitializeComponent();
-            
-            CenterWindow();
 
             AppTitleBar.Loaded += AppTitleBar_Loaded;
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(AppTitleBar);
+
+            AppWindow.Resize(new SizeInt32(1800,900));
+            CenterWindow();
+
 
             // Load books after the visual tree is ready to avoid blocking the UI thread
             if (Content is FrameworkElement fe)
@@ -57,6 +58,12 @@ namespace LibLog_v1
             allBooks = _books ?? new List<Book>();
             booksFiltered = new ObservableCollection<Book>(allBooks);
             lvBookshelf.ItemsSource = booksFiltered;
+            lbTagFilters.ItemsSource = DataAccess.GetAllBooks()
+                .Result
+                .SelectMany(b => b.Tags)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToList();
         }
 
         private async Task LoadBooksAsync()
@@ -93,6 +100,13 @@ namespace LibLog_v1
             AppWindow.Move(new PointInt32((area.Value.Width - AppWindow.Size.Width) / 2, (area.Value.Height - AppWindow.Size.Height) / 2));
         }
 
+        private void btnSearch_Click(object sender, RoutedEventArgs e)
+        {
+            // go to OpenLibary Website to search for books -- lazy but it works
+            var uri = new Uri("https://openlibrary.org/");
+            _ = Windows.System.Launcher.LaunchUriAsync(uri);
+        }
+
         private void btnScanUSB_Click(object sender, RoutedEventArgs e)
         {
             var usbScanWindow = new USBScanWindow();
@@ -113,24 +127,11 @@ namespace LibLog_v1
 
         }
 
-        private void btnClearFilters_Click(object sender, RoutedEventArgs e)
-        {
-            // clear filters gasp
-            FilterTitle.Text = string.Empty;
-            FilterAuthor.Text = string.Empty;
-            booksFiltered.Clear();
-            foreach (var book in allBooks)
-            {
-                booksFiltered.Add(book);
-            }
-
-        }
-
         private void lvBookshelf_ItemClick(object sender, ItemClickEventArgs e)
         {
             var currentBook = (Book)e.ClickedItem;
             BookDetails.DataContext = currentBook;
-
+            lbTags.ItemsSource = currentBook.Tags;
             SplitViewMain.IsPaneOpen = true;
 
         }
@@ -146,6 +147,20 @@ namespace LibLog_v1
             SplitViewMain.IsPaneOpen = false;
         }
 
+
+        #region FILTERING
+        private void btnClearFilters_Click(object sender, RoutedEventArgs e)
+        {
+            // clear filters gasp
+            FilterTitle.Text = string.Empty;
+            FilterAuthor.Text = string.Empty;
+            booksFiltered.Clear();
+            foreach (var book in allBooks)
+            {
+                booksFiltered.Add(book);
+            }
+
+        }
         private void OnFilterChanged(object sender, TextChangedEventArgs args)
         {
             var filtered = allBooks.Where(book => Filter(book));
@@ -182,7 +197,9 @@ namespace LibLog_v1
             }
         }
 
+        #endregion
 
+        #region TAGS
         private void btnEditTags_Click(object sender, RoutedEventArgs e)
         {
             if(spEditTags.Visibility == Visibility.Collapsed)
@@ -194,15 +211,12 @@ namespace LibLog_v1
                 spEditTags.Visibility = Visibility.Collapsed;
             }
         }
-
-        // Tags -> Able to add/remove from listbox BUT they aren't saved anywhere and the listbox applies to every book
-        // TODO: Add 'Tags' column to DB & Book.cs so they are saved and loaded properly
-        // This implementation is just for the demo :]
         private void btnAddTag_Click(object sender, RoutedEventArgs e)
         {
             if (txtNewTag.Text != string.Empty)
             {
                 lbTags.Items.Add(txtNewTag.Text);
+                DataAccess.AddTag(((Book)BookDetails.DataContext).ISBN, txtNewTag.Text);
                 txtNewTag.Text = string.Empty;
             }
             else
@@ -212,9 +226,10 @@ namespace LibLog_v1
         private void btnRemoveTag_Click(object sender, RoutedEventArgs e)
         {
             lbTags.Items.Remove(lbTags.SelectedItem);
+            DataAccess.RemoveTag(((Book)BookDetails.DataContext).ISBN, lbTags.SelectedItem.ToString() ?? "");
         }
 
-
+        #endregion
 
         //private void RadioButton_Checked(object sender, RoutedEventArgs e)
         //{
@@ -280,6 +295,6 @@ namespace LibLog_v1
 
         #endregion
 
-        
+
     }
 }

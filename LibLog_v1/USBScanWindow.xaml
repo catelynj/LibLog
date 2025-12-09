@@ -17,7 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition x:Name="GuideRow" Height="100"/>
             <RowDefinition x:Name="ISBNRow" Height="Auto"/>
-            <RowDefinition x:Name="SubmitRow" Height="250"/>
+            <RowDefinition x:Name="SubmitRow" Height="275"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="SubmitCol" Width="Auto"/>
@@ -44,30 +44,30 @@
             </Button>
         </StackPanel>
 
-        <!-- TODO: Add Batch Scanning Option -->
-
-
         <!-- ISBN Text Input & Label -->
         <TextBlock x:Name="txtISBNLabel" VerticalAlignment="Center" Margin="20,10,0,40">Scanned ISBN:</TextBlock>
-        <TextBlock x:Name="txtMultiScan" VerticalAlignment="Center" Margin="30,70,60,0">Batch Scan</TextBlock>
-        <CheckBox x:Name="cbMultiScan" VerticalAlignment="Center" Margin="110,70,0,0" Checked="cbMultiScan_Checked"/>
+        <!--<TextBlock x:Name="txtMultiScan" VerticalAlignment="Center" Margin="30,70,60,0">Batch Scan</TextBlock>-->
+        <!--<CheckBox x:Name="cbMultiScan" VerticalAlignment="Center" Margin="110,70,0,0" Checked="cbMultiScan_Checked"/>-->
         <TextBox x:Name="txtISBNInput" Grid.Row="1" VerticalAlignment="Center" MaxWidth="350" Margin="0,20,0,40" IsEnabled="False" TextChanged="txtISBNInput_TextChanged"/>
 
         <!-- Book Details, Submit, and Clear Button -->
         <StackPanel Grid.Row="2" Grid.Column="0" MinHeight="500">
-            <TextBlock x:Name="txtBookDetails" Margin="20,15,0,5" HorizontalAlignment="Left"></TextBlock>
-            <Image x:Name="bookCoverIcon" Width="50" Height="100" />
-            <!-- Update with book details from API -->
-            <Button x:Name="btnScanSubmit"  MinWidth="100" HorizontalAlignment="Center" Margin="0,40,0,0" Click="btnScanSubmit_Click">
-                <Button.Content>
-                    <FontIcon Glyph="&#xE8FB;"/>
-                </Button.Content>
-            </Button>
-            <Button x:Name="btnScanClear"  MaxWidth="100" HorizontalAlignment="Center" Margin="0,20,0,0" Click="btnScanClear_Click">
-                <Button.Content>
-                    <FontIcon Glyph="&#xE72C;"/>
-                </Button.Content>
-            </Button>
+            <TextBlock x:Name="txtBookDetails" Margin="20,5,0,5" HorizontalAlignment="Left"></TextBlock>
+            <Image x:Name="bookCoverIcon" Width="100" Height="150" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="btnScanSubmit"  MaxWidth="100" HorizontalAlignment="Center" Margin="0,20,5,0" Click="btnScanSubmit_Click">
+                    <Button.Content>
+                        <FontIcon Glyph="&#xE8FB;"/>
+                    </Button.Content>
+                </Button>
+                <Button x:Name="btnScanClear"  MaxWidth="100" HorizontalAlignment="Center" Margin="0,20,0,0" Click="btnScanClear_Click">
+                    <Button.Content>
+                        <FontIcon Glyph="&#xE72C;"/>
+                    </Button.Content>
+                </Button>
+            </StackPanel>
+            
         </StackPanel>
 
     </Grid>
