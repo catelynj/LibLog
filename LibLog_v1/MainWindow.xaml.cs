@@ -29,7 +29,7 @@ namespace LibLog_v1
 
         IList<Book> allBooks = new List<Book>();
         ObservableCollection<Book> booksFiltered = new ObservableCollection<Book>();
-        
+
         public MainWindow()
         {
             InitializeComponent();
@@ -38,7 +38,7 @@ namespace LibLog_v1
             ExtendsContentIntoTitleBar = true;
             SetTitleBar(AppTitleBar);
 
-            AppWindow.Resize(new SizeInt32(1800,900));
+            AppWindow.Resize(new SizeInt32(1800, 900));
             CenterWindow();
 
 
@@ -50,20 +50,33 @@ namespace LibLog_v1
 
         }
 
+        #region INIT
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             // Asynchronously load books and populate collections without blocking the UI thread
-            await LoadBooksAsync();
+            _books = await DataAccess.GetAllBooks();
 
             allBooks = _books ?? new List<Book>();
             booksFiltered = new ObservableCollection<Book>(allBooks);
             lvBookshelf.ItemsSource = booksFiltered;
-            lbTagFilters.ItemsSource = DataAccess.GetAllBooks()
-                .Result
-                .SelectMany(b => b.Tags)
-                .Distinct()
-                .OrderBy(t => t)
-                .ToList();
+
+            // Populate tag filters from the loaded books without blocking
+            RefreshTagFilters();
+        }
+
+        private void AppTitleBar_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (ExtendsContentIntoTitleBar == true)
+                AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        }
+
+        private void CenterWindow()
+        {
+            var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest)?.WorkArea;
+
+            if (area == null) return;
+
+            AppWindow.Move(new PointInt32((area.Value.Width - AppWindow.Size.Width) / 2, (area.Value.Height - AppWindow.Size.Height) / 2));
         }
 
         private async Task LoadBooksAsync()
@@ -85,21 +98,9 @@ namespace LibLog_v1
             return image;
         }
 
-        private void AppTitleBar_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (ExtendsContentIntoTitleBar == true)
-                AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
-        }
+        #endregion
 
-        private void CenterWindow()
-        {
-            var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Nearest)?.WorkArea;
-
-            if (area == null) return;
-
-            AppWindow.Move(new PointInt32((area.Value.Width - AppWindow.Size.Width) / 2, (area.Value.Height - AppWindow.Size.Height) / 2));
-        }
-
+        #region BUTTONS - Search, Scan, Refresh, Sort
         private void btnSearch_Click(object sender, RoutedEventArgs e)
         {
             // go to OpenLibary Website to search for books -- lazy but it works
@@ -121,18 +122,39 @@ namespace LibLog_v1
 
         private async void btnRefreshLibrary_Click(object sender, RoutedEventArgs e)
         {
-            await DataAccess.GetAllBooks();
             _books = await DataAccess.GetAllBooks();
-            lvBookshelf.ItemsSource = _books;
+            allBooks = _books ?? new List<Book>();
 
+            // refresh both displayed list and tag filters
+            booksFiltered.Clear();
+            foreach (var b in allBooks)
+                booksFiltered.Add(b);
+
+            RefreshTagFilters();
         }
 
+        private void sortAuthor_Click(object sender, RoutedEventArgs e)
+        {
+           booksFiltered = new ObservableCollection<Book>(booksFiltered.OrderBy(b => b.Author));
+           lvBookshelf.ItemsSource = booksFiltered;
+        }
+
+        private void sortTitle_Click(object sender, RoutedEventArgs e)
+        {
+            booksFiltered = new ObservableCollection<Book>(booksFiltered.OrderBy(b => b.Title));
+            lvBookshelf.ItemsSource = booksFiltered;
+        }
+
+        #endregion
+
+        #region DETAILS
         private void lvBookshelf_ItemClick(object sender, ItemClickEventArgs e)
         {
             var currentBook = (Book)e.ClickedItem;
             BookDetails.DataContext = currentBook;
             lbTags.ItemsSource = currentBook.Tags;
             SplitViewMain.IsPaneOpen = true;
+            spEditTags.Visibility = Visibility.Collapsed;
 
         }
 
@@ -142,18 +164,88 @@ namespace LibLog_v1
             DataAccess.RemoveData(currentBook.ISBN);
 
             _books = await DataAccess.GetAllBooks();
-            lvBookshelf.ItemsSource = _books;
+            allBooks = _books ?? new List<Book>();
+
+            booksFiltered.Clear();
+            foreach (var b in allBooks)
+                booksFiltered.Add(b);
+
+            RefreshTagFilters();
 
             SplitViewMain.IsPaneOpen = false;
         }
 
+        #endregion
+
+        #region TAGS
+        private void btnEditTags_Click(object sender, RoutedEventArgs e)
+        {
+            if (spEditTags.Visibility == Visibility.Collapsed)
+            {
+                spEditTags.Visibility = Visibility.Visible;
+                btnRemoveTag.Visibility = Visibility.Visible;
+            }
+            else
+                spEditTags.Visibility = Visibility.Collapsed;
+
+        }
+        private void btnAddTag_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtNewTag.Text)) return;
+            if (BookDetails.DataContext is not Book current) return;
+
+            current.Tags.Add(txtNewTag.Text);
+            DataAccess.AddTag(((Book)BookDetails.DataContext).ISBN, txtNewTag.Text);
+            txtNewTag.Text = string.Empty;
+
+            // update available tag filters
+            RefreshTagFilters();
+
+            // re-run filter to include changes
+            UpdateFilter();
+        }
+
+        private void btnRemoveTag_Click(object sender, RoutedEventArgs e)
+        {
+            if (BookDetails.DataContext is not Book current) return;
+            if (lbTags.SelectedItem is string tag)
+            {
+                current.Tags.Remove(tag);
+                DataAccess.RemoveTag(current.ISBN, tag);
+
+                // update available tag filters
+                RefreshTagFilters();
+
+                // re-run filter to include changes
+                UpdateFilter();
+            }
+
+        }
+
+        private void RefreshTagFilters()
+        {
+            if (lbTagFilters == null) return;
+
+            lbTagFilters.ItemsSource = allBooks
+                .SelectMany(b => b.Tags != null ? b.Tags : Enumerable.Empty<string>())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct()
+                .OrderBy(t => t)
+                .ToList();
+        }
+        #endregion
 
         #region FILTERING
         private void btnClearFilters_Click(object sender, RoutedEventArgs e)
         {
-            // clear filters gasp
+            // clear filters
             FilterTitle.Text = string.Empty;
             FilterAuthor.Text = string.Empty;
+
+            // clear tag selection
+            lbTagFilters?.SelectedItems?.Clear();
+
             booksFiltered.Clear();
             foreach (var book in allBooks)
             {
@@ -163,6 +255,16 @@ namespace LibLog_v1
         }
         private void OnFilterChanged(object sender, TextChangedEventArgs args)
         {
+            UpdateFilter();
+        }
+
+        private void lbTagFilters_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateFilter();
+        }
+
+        private void UpdateFilter()
+        {
             var filtered = allBooks.Where(book => Filter(book));
             Remove_NonMatching(filtered);
             AddBack_Books(filtered);
@@ -170,8 +272,17 @@ namespace LibLog_v1
 
         private bool Filter(Book book)
         {
+            var selectedTags = lbTagFilters?.SelectedItems?.OfType<string>().ToList();
+            bool tagMatch = true;
+
+            if (selectedTags != null && selectedTags.Count > 0)
+            {
+                tagMatch = book.Tags != null && book.Tags.Intersect(selectedTags).Any();
+            }
+
             return book.Title.Contains(FilterTitle.Text, StringComparison.InvariantCultureIgnoreCase) &&
-                   book.Author.Contains(FilterAuthor.Text, StringComparison.InvariantCultureIgnoreCase);
+                   book.Author.Contains(FilterAuthor.Text, StringComparison.InvariantCultureIgnoreCase) &&
+                   tagMatch;
         }
 
         private void Remove_NonMatching(IEnumerable<Book> filteredData)
@@ -198,62 +309,6 @@ namespace LibLog_v1
         }
 
         #endregion
-
-        #region TAGS
-        private void btnEditTags_Click(object sender, RoutedEventArgs e)
-        {
-            if(spEditTags.Visibility == Visibility.Collapsed)
-            {
-                spEditTags.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                spEditTags.Visibility = Visibility.Collapsed;
-            }
-        }
-        private void btnAddTag_Click(object sender, RoutedEventArgs e)
-        {
-            if (txtNewTag.Text != string.Empty)
-            {
-                lbTags.Items.Add(txtNewTag.Text);
-                DataAccess.AddTag(((Book)BookDetails.DataContext).ISBN, txtNewTag.Text);
-                txtNewTag.Text = string.Empty;
-            }
-            else
-                return;
-        }
-
-        private void btnRemoveTag_Click(object sender, RoutedEventArgs e)
-        {
-            lbTags.Items.Remove(lbTags.SelectedItem);
-            DataAccess.RemoveTag(((Book)BookDetails.DataContext).ISBN, lbTags.SelectedItem.ToString() ?? "");
-        }
-
-        #endregion
-
-        //private void RadioButton_Checked(object sender, RoutedEventArgs e)
-        //{
-        //    if(rb_Read.IsChecked == true)
-        //    {
-        //        // display only read books
-        //    }
-        //    else if(rb_Unread.IsChecked == true)
-        //    {
-        //        // display only unread books
-        //    }
-        //    else if(rb_InProg.IsChecked == true)
-        //    {
-        //        // display in progress books
-        //    }
-        //    else
-        //    {
-        //        // 'All' is checked by default
-        //        // display all books
-        //    }
-
-        //}
-
-
 
         #region NOT USED
         // CHANGED THE TITLE BAR -- COMPLETELY USELESS CODE BELOW
@@ -295,6 +350,6 @@ namespace LibLog_v1
 
         #endregion
 
-
+        
     }
 }

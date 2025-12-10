@@ -123,8 +123,4 @@ public sealed partial class USBScanWindow : Window
         txtBookDetails.Text = "";
     }
 
-    private void cbMultiScan_Checked(object sender, RoutedEventArgs e)
-    {
-        // replace API call for multi book scan and adjust logic accordingly
-    }
 }

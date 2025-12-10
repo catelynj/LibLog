@@ -50,17 +50,17 @@
                         <!-- Author Filter -->
                         <TextBox x:Name="FilterAuthor" PlaceholderText="Search by author..." Margin="0,5,0,5" HorizontalAlignment="Stretch" TextChanged="OnFilterChanged"/>
                         <!-- Reading Status -->
-                        <Expander Header="Reading Status" IsExpanded="False" HorizontalAlignment="Stretch">
+                        <!--<Expander Header="Reading Status" IsExpanded="False" HorizontalAlignment="Stretch">
                             <StackPanel Spacing="5" Margin="0,5,0,5">
                                 <RadioButton x:Name="rb_All" Content="All" IsChecked="True" />
                                 <RadioButton x:Name="rb_Read" Content="Read" />
                                 <RadioButton x:Name="rb_Unread" Content="Unread" />
                                 <RadioButton x:Name="rb_InProg" Content="In Progress"/>
                             </StackPanel>
-                        </Expander>
+                        </Expander>-->
                         <!-- Tags Filter -->
                         <Expander Header="Tags" IsExpanded="False" HorizontalAlignment="Stretch">
-                            <ListBox x:Name="lbTagFilters" SelectionMode="Multiple" Margin="0,5,0,5" HorizontalAlignment="Stretch" Height="150" SelectionChanged="OnFilterChanged"/>
+                            <ListBox x:Name="lbTagFilters" SelectionMode="Multiple" Background="Transparent" SelectionChanged="lbTagFilters_SelectionChanged" Margin="0,5,0,5" HorizontalAlignment="Stretch" Height="150"/>
                         </Expander>
                         <!-- Clear Filters Button -->
                         <Button x:Name="btnClearFilters" Content="Clear Filters" HorizontalAlignment="Stretch" Margin="0,10,0,10" Click="btnClearFilters_Click"/>
@@ -75,7 +75,7 @@
                     <Grid x:Name="Library">
                         <Grid.RowDefinitions>
                             <RowDefinition x:Name="HeaderRow" Height="50"/>
-                            <RowDefinition x:Name="LibraryRow" Height="550"/>
+                            <RowDefinition x:Name="LibraryRow" Height="650"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition x:Name="LibraryTextCol" Width="Auto"/>
@@ -84,7 +84,7 @@
 
                         <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.ColumnSpan="2">
                             <TextBlock x:Name="txtBookshelfTitle" Grid.Column="0" Grid.Row="0" FontSize="22" HorizontalAlignment="Stretch" Margin="5,10,5,5">Your Library</TextBlock>
-                            <Button x:Name="btnAddBook" Grid.Column="1" Grid.Row="0" Margin="25,10,5,5" TabIndex="0">
+                            <Button x:Name="btnAddBook" Grid.Column="1" Grid.Row="0" Margin="25,5,5,0" TabIndex="0">
                                 <Button.Content>
                                     <FontIcon Glyph="&#xE82E;"/>
                                 </Button.Content>
@@ -121,6 +121,18 @@
                                     <FontIcon Glyph="&#xE72C;"/>
                                 </Button.Content>
                             </Button>
+
+                            <DropDownButton x:Name="btnSort" Margin="5,0,0,0">
+                                <DropDownButton.Content>
+                                    <FontIcon Glyph="&#xE8CB;"/>
+                                </DropDownButton.Content>
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout Placement="RightEdgeAlignedTop">
+                                        <MenuFlyoutItem x:Name="sortAuthor" Click="sortAuthor_Click">Author</MenuFlyoutItem>
+                                        <MenuFlyoutItem x:Name="sortTitle" Click="sortTitle_Click">Title</MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
                         </StackPanel>
                         <ListView x:Name="lvBookshelf"
                                   Grid.Row="1"
@@ -165,6 +177,7 @@
                                     <RowDefinition x:Name="BookImage" Height="150"/>
                                     <RowDefinition x:Name="BookDetail" Height="50"/>
                                     <RowDefinition x:Name="Tags" Height="Auto"/>
+                                    <RowDefinition x:Name="EditTags" Height="Auto"/>
                                     <RowDefinition x:Name="Buttons" Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <Image x:Name="imgDetailsCover"
@@ -182,36 +195,50 @@
 
 
                                 <!-- Add/Remove/Edit Tags -->
-                                <StackPanel Grid.Row="2" Margin="20">
+                                <StackPanel Grid.Row="2" HorizontalAlignment="Stretch">
+                                    <TextBlock Text="Tags:" FontSize="14" Margin="10,10,0,5"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ListBox x:Name="lbTags" Background="Transparent">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                                        <Button Click="btnRemoveTag_Click" Tag="{Binding}" Visibility="{Binding ElementName=spEditTags, Path=Visibility}" Margin="15,0,0,0" Style="{StaticResource SubtleButtonStyle}">
+                                                            <Button.Content>
+                                                                <FontIcon Glyph="&#xE894;"/>
+                                                            </Button.Content>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </StackPanel>
+
+
                                     <Button x:Name="btnEditTags" Click="btnEditTags_Click"  Margin="20" HorizontalAlignment="Center">
                                         <Button.Content>
                                             <FontIcon Glyph="&#xE70F;"/>
                                         </Button.Content>
                                     </Button>
-                                    <TextBlock Text="Tags:" FontSize="14" Margin="10,10,0,5"/>
-                                    <ListBox x:Name="lbTags"/>
+                                    
                                 </StackPanel>
-                                <StackPanel Grid.Row="2" HorizontalAlignment="Stretch" x:Name="spEditTags" Visibility="Collapsed">
-                                    <TextBox x:Name="txtNewTag" PlaceholderText="Enter tag..." Margin="10,5,10,5" HorizontalAlignment="Stretch"/>
-                                    <Button x:Name="btnAddTag" Click="btnAddTag_Click">
+
+                                <StackPanel Grid.Row="3" x:Name="spEditTags" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <AutoSuggestBox x:Name="txtNewTag" PlaceholderText="Enter tag..." Margin="10,5,20,0" Width="200"/>
+                                    <Button x:Name="btnAddTag" Click="btnAddTag_Click" Style="{StaticResource SubtleButtonStyle}" Margin="0,10,0,0">
                                         <Button.Content>
-                                            <FontIcon Glyph="&#xECC8;"/>
-                                        </Button.Content>
-                                    </Button>
-                                    <Button x:Name="btnRemoveTag" Click="btnRemoveTag_Click">
-                                        <Button.Content>
-                                            <FontIcon Glyph="&#xECC9;"/>
+                                            <FontIcon Glyph="&#xE710;"/>
                                         </Button.Content>
                                     </Button>
                                 </StackPanel>
-                                
                                 
                                 <!-- Remove Book from Library -->
-                                <Button x:Name="btnRemoveBook" Click="btnRemoveBook_Click" Grid.Row="3" Margin="0,40,0,0" HorizontalAlignment="Center">
+                                <Button x:Name="btnRemoveBook" Click="btnRemoveBook_Click" Grid.Row="4" Margin="0,40,0,0" HorizontalAlignment="Center" Style="{StaticResource SubtleButtonStyle}">
                                     <Button.Content>
                                         <FontIcon Glyph="&#xE74D;"/>
                                     </Button.Content>
                                 </Button>
+                                
                             </Grid>
                         </ScrollViewer>
                     </Grid>
@@ -219,6 +246,4 @@
             </SplitView>
         </Grid>
     </Grid>
-
-
 </Window>

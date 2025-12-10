@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Data.Sqlite;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Media.Imaging;
+using System.Collections.ObjectModel;
 
 namespace LibLog_v1
 {
@@ -16,6 +17,6 @@ namespace LibLog_v1
         public required string Author { get; set; }
         public required string Title { get; set; }
         public required BitmapImage CoverImage { get; set; }
-        public required string[] Tags { get; set; }
+        public ObservableCollection<string> Tags { get; set; } = new ObservableCollection<string>();
     }
 }
