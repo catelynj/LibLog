@@ -183,7 +183,6 @@ namespace LibLog_v1
             if (spEditTags.Visibility == Visibility.Collapsed)
             {
                 spEditTags.Visibility = Visibility.Visible;
-                btnRemoveTag.Visibility = Visibility.Visible;
             }
             else
                 spEditTags.Visibility = Visibility.Collapsed;

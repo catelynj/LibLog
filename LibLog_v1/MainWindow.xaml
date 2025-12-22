@@ -203,7 +203,7 @@
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
-                                                        <Button Click="btnRemoveTag_Click" Tag="{Binding}" Visibility="{Binding ElementName=spEditTags, Path=Visibility}" Margin="15,0,0,0" Style="{StaticResource SubtleButtonStyle}">
+                                                        <Button x:Name="btnRemoveTag" Click="btnRemoveTag_Click" Tag="{Binding}" Visibility="{Binding ElementName=spEditTags, Path=Visibility}" Margin="15,0,0,0" Style="{StaticResource SubtleButtonStyle}">
                                                             <Button.Content>
                                                                 <FontIcon Glyph="&#xE894;"/>
                                                             </Button.Content>
